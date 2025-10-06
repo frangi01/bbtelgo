@@ -54,7 +54,7 @@ func (app *App) Run(context context.Context) {
 				DropPendingUpdates: true,
 			},
 		)
-		app.logger.Debugf("DeleteWebhook result: %s", deleteWebhookResult)
+		app.logger.Debugf("DeleteWebhook result: %v", deleteWebhookResult)
 		if err != nil {
 			app.logger.Debugf("DeleteWebhook error: %v", err)
 		}
