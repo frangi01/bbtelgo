@@ -25,6 +25,19 @@ const (
 	LogLevelError	LogLevel = "error"
 )
 
+func toLogxLevel(l LogLevel) logx.Level {
+	switch l {
+	case LogLevelDebug:
+		return logx.Debug
+	case LogLevelInfo:
+		return logx.Info
+	case LogLevelError:
+		return logx.Error
+	default:
+		return logx.Info
+	}
+}
+
 type MongoCfg struct {
 	URI           string
 	DB            string
@@ -35,11 +48,13 @@ type MongoCfg struct {
 	CmdTimeout     time.Duration
 }
 
-
 type Config struct {
 	LogLevel					LogLevel
 	LogFile						bool
 	LogFilePath					string
+	LogFileMaxSizeMB			int
+	LogIncludeSrc				bool
+	LogTimeFormat				string
 	Mode						Mode
 	Token						string
 	ResetWebHook 				bool
@@ -102,10 +117,19 @@ func Load(logger *logx.Logger) (Config, error) {
 		logger.Errorf("env MONGO_CMD_TIMEOUT")
 	}
 
+	strLogFileMaxSizeMB := os.Getenv("APP_LOG_FILE_MAX_MB")
+	logFileMaxSizeMB, err := strconv.Atoi(strLogFileMaxSizeMB)
+	if err != nil {
+		logger.Errorf("env APP_LOG_FILE_MAX_MB")
+	}
+
 	cfg := Config{
 		LogLevel: 					logLevel,
 		LogFile:					os.Getenv("APP_LOG_FILE") == "true",
 		LogFilePath:				os.Getenv("APP_LOG_FILE_PATH"),
+		LogFileMaxSizeMB:			logFileMaxSizeMB,
+		LogIncludeSrc:				os.Getenv("APP_LOG_INCLUDE_SRC") == "true",
+		LogTimeFormat:				os.Getenv("APP_LOG_TIMEFORMAT"),
 		Mode: 						mode,
 		Token: 						os.Getenv("APP_TELEGRAM_TOKEN"),
 		ResetWebHook:				os.Getenv("APP_RESET_WEBHOOK") == "true",
@@ -160,7 +184,20 @@ func Load(logger *logx.Logger) (Config, error) {
 			logger.Errorf("%v", err)
 			return Config{}, err
 		}
+	}
 
+	// update logger with env data
+	if logger != nil {
+		logger.SetLevel(toLogxLevel(cfg.LogLevel))
+		logger.SetIncludeSrc(cfg.LogIncludeSrc)
+		logger.SetTimeFormat(cfg.LogTimeFormat)
+		if cfg.LogFile {
+			if err := logger.EnableFile(cfg.LogFilePath, cfg.LogFileMaxSizeMB); err != nil {
+				logger.Warnf("enable file logging failed: %v", err)
+			}
+		} else {
+			logger.DisableFile()
+		}
 	}
 
 	return cfg, nil

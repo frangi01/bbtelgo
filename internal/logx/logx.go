@@ -18,6 +18,7 @@ const (
 	Warn
 	Error
 )
+
 func (l Level) String() string {
 	switch l {
 	case Debug:
@@ -33,56 +34,57 @@ func (l Level) String() string {
 	}
 }
 var (
-	colReset = "\x1b[0m"
-	colGray  = "\x1b[90m"
-	colBlue  = "\x1b[34m"
-	colYellow= "\x1b[33m"
-	colRed   = "\x1b[31m"
+	colReset  = "\x1b[0m"
+	colGray   = "\x1b[90m"
+	colBlue   = "\x1b[34m"
+	colYellow = "\x1b[33m"
+	colRed    = "\x1b[31m"
 )
+
 type Level int
 type Options struct {
-	Level		Level
-	MaxSizeMB	int
-	IncludeSrc	bool
-	TimeFormat	string
+	Level      Level
+	MaxSizeMB  int
+	IncludeSrc bool
+	TimeFormat string
 }
 type Logger struct {
-	mu			sync.Mutex
-	level		Level
-	console		*log.Logger
-	file		*log.Logger
-	fileHandle  *os.File
-	filePath	string
-	maxSize		int64
-	includeSrc	bool
-	timeFormat	string
+	mu         sync.Mutex
+	level      Level
+	console    *log.Logger
+	file       *log.Logger
+	fileHandle *os.File
+	filePath   string
+	maxSize    int64
+	includeSrc bool
+	timeFormat string
 }
 
 func New(fp string, opts Options) (*Logger, error) {
-	
+
 	if opts.TimeFormat == "" {
 		opts.TimeFormat = time.RFC3339
 	}
-	
+
 	if err := os.MkdirAll(filepath.Dir(fp), 0o755); err != nil {
 		return nil, fmt.Errorf("create log dir: %w", err)
 	}
-	
+
 	fh, err := os.OpenFile(fp, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
 		return nil, fmt.Errorf("open log file: %w", err)
 	}
-	
+
 	l := &Logger{
-			level:      opts.Level,
-			console:    log.New(os.Stdout, "", 0),
-			file:       log.New(fh, "", 0),
-			fileHandle: fh,
-			filePath:   fp,
-			maxSize:    int64(opts.MaxSizeMB) * 1024 * 1024,
-			includeSrc: opts.IncludeSrc,
-			timeFormat: opts.TimeFormat,
-		}
+		level:      opts.Level,
+		console:    log.New(os.Stdout, "", 0),
+		file:       log.New(fh, "", 0),
+		fileHandle: fh,
+		filePath:   fp,
+		maxSize:    int64(opts.MaxSizeMB) * 1024 * 1024,
+		includeSrc: opts.IncludeSrc,
+		timeFormat: opts.TimeFormat,
+	}
 	return l, nil
 }
 
@@ -217,11 +219,63 @@ func (l *Logger) Infof(format string, args ...any)  { l.logf(Info, format, args.
 func (l *Logger) Warnf(format string, args ...any)  { l.logf(Warn, format, args...) }
 func (l *Logger) Errorf(format string, args ...any) { l.logf(Error, format, args...) }
 
+func (l *Logger) SetLevel(lv Level) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.level = lv
+}
 
+func (l *Logger) SetIncludeSrc(on bool) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.includeSrc = on
+}
 
+func (l *Logger) SetTimeFormat(tf string) {
+	if tf == "" {
+		return
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.timeFormat = tf
+}
+
+func (l *Logger) DisableFile() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.fileHandle != nil {
+		_ = l.fileHandle.Close()
+		l.fileHandle = nil
+	}
+	l.file = log.New(io.Discard, "", 0)
+}
+
+func (l *Logger) EnableFile(path string, maxSizeMB int) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if path == "" {
+		path = l.filePath
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("create log dir: %w", err)
+	}
+	fh, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		return fmt.Errorf("open log file: %w", err)
+	}
+	if l.fileHandle != nil {
+		_ = l.fileHandle.Close()
+	}
+	l.fileHandle = fh
+	l.filePath = path
+	l.maxSize = int64(maxSizeMB) * 1024 * 1024
+	l.file = log.New(fh, "", 0)
+	return nil
+}
 
 // HOW TO USE
-/*	
+/*
 	logger, err := logx.New("logs/bot.log", logx.Options{
 		Level:      logx.Debug, // minimum level to print
 		MaxSizeMB:  10,         // rotate after ~10MB (0 to disable)
