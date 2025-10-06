@@ -1,8 +1,11 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"os/signal"
+	"syscall"
 
+	"github.com/frangi01/bbtelgo/internal/app"
 	"github.com/frangi01/bbtelgo/internal/config"
 	"github.com/frangi01/bbtelgo/internal/logx"
 )
@@ -20,12 +23,20 @@ func main() {
 	}
 	defer logger.Close()
 	
-	_, err = config.Load(logger)
+	config, err := config.Load(logger)
 	if err != nil {
 		logger.Errorf("config - env")
 		return
 	}
-	
 
-	fmt.Println("hello, world go!")
+	context, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
+	app, err := app.New(logger, config)
+	if err != nil {
+		logger.Errorf("bot - new")
+		return
+	}
+
+	app.Run(context)
 }
