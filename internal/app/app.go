@@ -72,7 +72,7 @@ func (app *App) Run(context context.Context) {
 				SecretToken: app.config.WebHookSecret,
 			})
 
-			app.logger.Debugf("SetWebHook result: %s", setWebHookResult)
+			app.logger.Debugf("SetWebHook result: %v", setWebHookResult)
 
 			if err != nil {
 				app.logger.Errorf("SetWebHook error: %v", err)
