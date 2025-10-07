@@ -12,7 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func NewClient(ctx context.Context, config config.MongoCfg) (*mongo.Client, error) {
+func NewDBClient(ctx context.Context, config config.MongoCfg) (*mongo.Client, error) {
 	if config.URI == "" {
 		return nil, errors.New("empty Mongo URI")
 	}

@@ -25,6 +25,13 @@ const (
 	LogLevelError	LogLevel = "error"
 )
 
+type RateLimitType string
+
+const (
+	RLSlidingWindow RateLimitType = "sliding-window"
+	RLFixedWindow	RateLimitType = "fixed-window"
+)
+
 func toLogxLevel(l LogLevel) logx.Level {
 	switch l {
 	case LogLevelDebug:
@@ -49,6 +56,15 @@ type MongoCfg struct {
 	MaxConnectingLimit	uint64
 }
 
+type RedisCfg struct {
+	Addr           	string
+	Password		string
+	DB            	int
+	RateLimitType	RateLimitType
+	RateLimitMessages int
+	RateLimitMs		int
+}
+
 type Config struct {
 	LogLevel					LogLevel
 	LogFile						bool
@@ -68,6 +84,7 @@ type Config struct {
 	WebHookTLSKeyFile 			string
 	WebHookTLSCertFile 			string
 	MongoCfg					MongoCfg
+	RedisCfg					RedisCfg
 }
 
 func Load(logger *logx.Logger) (Config, error) {
@@ -130,6 +147,24 @@ func Load(logger *logx.Logger) (Config, error) {
 		logger.Errorf("env MONGO_MAX_CONNECTING_LIMIT")
 	}
 
+	strRedisDB := os.Getenv("REDIS_DB")
+	redisDB, err := strconv.Atoi(strRedisDB)
+	if err != nil {
+		logger.Errorf("env REDIS_DB")
+	}
+
+	strRateLimitMessages := os.Getenv("REDIS_RATE_LIMIT_MESSAGES")
+	rateLimitMessages, err := strconv.Atoi(strRateLimitMessages)
+	if err != nil {
+		logger.Errorf("env REDIS_RATE_LIMIT_MESSAGES")
+	}
+
+	strRateLimitMs := os.Getenv("REDIS_RATE_LIMIT_MS")
+	rateLimitMs, err := strconv.Atoi(strRateLimitMs)
+	if err != nil {
+		logger.Errorf("env REDIS_RATE_LIMIT_MS")
+	}
+
 	cfg := Config{
 		LogLevel: 					logLevel,
 		LogFile:					os.Getenv("APP_LOG_FILE") == "true",
@@ -157,6 +192,14 @@ func Load(logger *logx.Logger) (Config, error) {
 			ConnectTimeout: time.Duration(mongoConnectTimeout) * time.Second,
 			CmdTimeout: time.Duration(mongoCmdTimeout) * time.Second,
 			MaxConnectingLimit: maxConnectingLimit,
+		},
+		RedisCfg: RedisCfg{
+			Addr: os.Getenv("REDIS_ADDR"),
+			Password: os.Getenv("REDIS_PASSWORD"),
+			DB: redisDB,
+			RateLimitType: RateLimitType(os.Getenv("REDIS_RATE_LIMIT")),
+			RateLimitMessages: rateLimitMessages,
+			RateLimitMs: rateLimitMs,
 		},
 	}
 

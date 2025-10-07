@@ -20,10 +20,10 @@ type App struct {
 	bot	 		*tgbot.Bot
 }
 
-func New(logger *logx.Logger, config config.Config, dbclient *mongo.Client, repositoryList *db.RepositoryList) (*App, error) {
+func New(logger *logx.Logger, config config.Config, dbclient *mongo.Client, repositoryList *db.RepositoryList, cache *db.CacheClient) (*App, error) {
 	opts := []tgbot.Option{
 		tgbot.WithDefaultHandler(
-			handlers.Handler(logger, config, repositoryList),
+			handlers.Handler(logger, config, repositoryList, cache),
 		),
 	}
 

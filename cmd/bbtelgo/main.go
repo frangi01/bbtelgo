@@ -14,10 +14,10 @@ import (
 func main() {
 
 	logger, err := logx.New("logs/bot.log", logx.Options{
-		Level:      logx.Debug, // minimum level to print
-		MaxSizeMB:  10,         // rotate after ~10MB (0 to disable)
-		IncludeSrc: true,       // show file:line
-		// TimeFormat: time.RFC3339, // or customize
+		Level:      logx.Debug, 		// minimum level to print
+		MaxSizeMB:  10,         		// rotate after ~10MB (0 to disable)
+		IncludeSrc: true,       		// show file:line
+		// TimeFormat: time.RFC3339, 	// or customize
 	})
 	if err != nil {
 		panic(err)
@@ -30,15 +30,15 @@ func main() {
 		return
 	}
 
-	context, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	dbclient, err := db.NewClient(context, config.MongoCfg)
+	dbclient, err := db.NewDBClient(ctx, config.MongoCfg)
 	if err != nil {
 		logger.Errorf("mongo connect: %v", err)
 		return
 	}
-	defer dbclient.Disconnect(context)
+	defer dbclient.Disconnect(ctx)
 
 	repositoryList, err := db.NewRepositoryList(config.MongoCfg, dbclient, logger)
 	if err != nil {
@@ -46,13 +46,19 @@ func main() {
 		return
 	}
 
+	cacheClient, err := db.NewCacheClient(ctx, config.RedisCfg)
+	if err != nil {
+		logger.Warnf("redis connect: %v", err)
+	}
+	defer cacheClient.Close()
 
 
-	app, err := app.New(logger, config, dbclient, repositoryList)
+
+	app, err := app.New(logger, config, dbclient, repositoryList, cacheClient)
 	if err != nil {
 		logger.Errorf("bot - new")
 		return
 	}
 
-	app.Run(context)
+	app.Run(ctx)
 }
