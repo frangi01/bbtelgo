@@ -46,6 +46,7 @@ type MongoCfg struct {
 	AppName       string
 	ConnectTimeout time.Duration
 	CmdTimeout     time.Duration
+	MaxConnectingLimit	uint64
 }
 
 type Config struct {
@@ -123,6 +124,12 @@ func Load(logger *logx.Logger) (Config, error) {
 		logger.Errorf("env APP_LOG_FILE_MAX_MB")
 	}
 
+	strMaxConnectingLimit := os.Getenv("MONGO_MAX_CONNECTING_LIMIT")
+	maxConnectingLimit, err := strconv.ParseUint(strMaxConnectingLimit, 10, 32)
+	if err != nil {
+		logger.Errorf("env MONGO_MAX_CONNECTING_LIMIT")
+	}
+
 	cfg := Config{
 		LogLevel: 					logLevel,
 		LogFile:					os.Getenv("APP_LOG_FILE") == "true",
@@ -147,8 +154,9 @@ func Load(logger *logx.Logger) (Config, error) {
 			MinPoolSize: mongoMinPoolSize,
 			MaxPoolSize: mongoMaxPoolSize,
 			AppName: os.Getenv("MONGO_APPNAME"),
-			ConnectTimeout: time.Duration(mongoConnectTimeout),
-			CmdTimeout: time.Duration(mongoCmdTimeout),
+			ConnectTimeout: time.Duration(mongoConnectTimeout) * time.Second,
+			CmdTimeout: time.Duration(mongoCmdTimeout) * time.Second,
+			MaxConnectingLimit: maxConnectingLimit,
 		},
 	}
 

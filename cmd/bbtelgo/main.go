@@ -7,6 +7,7 @@ import (
 
 	"github.com/frangi01/bbtelgo/internal/app"
 	"github.com/frangi01/bbtelgo/internal/config"
+	"github.com/frangi01/bbtelgo/internal/db"
 	"github.com/frangi01/bbtelgo/internal/logx"
 )
 
@@ -32,7 +33,22 @@ func main() {
 	context, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	app, err := app.New(logger, config)
+	dbclient, err := db.NewClient(context, config.MongoCfg)
+	if err != nil {
+		logger.Errorf("mongo connect: %v", err)
+		return
+	}
+	defer dbclient.Disconnect(context)
+
+	repositoryList, err := db.NewRepositoryList(config.MongoCfg, dbclient, logger)
+	if err != nil {
+		logger.Errorf("mongo listrepo: %v", err)
+		return
+	}
+
+
+
+	app, err := app.New(logger, config, dbclient, repositoryList)
 	if err != nil {
 		logger.Errorf("bot - new")
 		return

@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"github.com/frangi01/bbtelgo/internal/config"
+	"github.com/frangi01/bbtelgo/internal/db"
 	"github.com/frangi01/bbtelgo/internal/handlers"
 	"github.com/frangi01/bbtelgo/internal/logx"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	tgbot "github.com/go-telegram/bot"
 )
@@ -18,10 +20,10 @@ type App struct {
 	bot	 		*tgbot.Bot
 }
 
-func New(logger *logx.Logger, config config.Config) (*App, error) {
+func New(logger *logx.Logger, config config.Config, dbclient *mongo.Client, repositoryList *db.RepositoryList) (*App, error) {
 	opts := []tgbot.Option{
 		tgbot.WithDefaultHandler(
-			handlers.Handler(logger, config),
+			handlers.Handler(logger, config, repositoryList),
 		),
 	}
 
