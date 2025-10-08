@@ -6,40 +6,41 @@ import (
 	"time"
 
 	"github.com/frangi01/bbtelgo/internal/config"
-	"github.com/frangi01/bbtelgo/internal/db"
-	"github.com/frangi01/bbtelgo/internal/entities"
-	"github.com/frangi01/bbtelgo/internal/logx"
+	"github.com/frangi01/bbtelgo/internal/handlers/private"
 	"github.com/frangi01/bbtelgo/internal/utils"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 )
 
-func Handler(logger *logx.Logger, cfg config.Config, repositoryList *db.RepositoryList, cache *db.CacheClient) bot.HandlerFunc {
-	return func(ctx context.Context, b *bot.Bot, update *models.Update) {
-        if cache != nil && cfg.RedisCfg.RateLimitMessages > 0 {
-			key := fmt.Sprintf("rl:user:%d:msg", update.Message.From.ID)
 
-			limit := cfg.RedisCfg.RateLimitMessages
-			window := time.Duration(cfg.RedisCfg.RateLimitMs) * time.Millisecond
+
+func Handler(handlerDeps *utils.HandlerDeps) bot.HandlerFunc {
+	return func(ctx context.Context, b *bot.Bot, update *models.Update) {
+        // rate limit
+		if handlerDeps.Cache != nil && handlerDeps.Cfg.RedisCfg.RateLimitMessages > 0 {
+			key := fmt.Sprintf("rl:user:%d:msg", utils.ChatIDFromUpdate(update))
+
+			limit := handlerDeps.Cfg.RedisCfg.RateLimitMessages
+			window := time.Duration(handlerDeps.Cfg.RedisCfg.RateLimitMs) * time.Millisecond
 
 			if window <= 0 {
-				window = time.Minute // default 60s
+				window = time.Minute
 			}
 
 			allowed := true
 			var err error
 
-			switch cfg.RedisCfg.RateLimitType {
+			switch handlerDeps.Cfg.RedisCfg.RateLimitType {
 				case config.RLFixedWindow:
-					allowed, _, _, err = cache.RateLimitFixedWindow(ctx, key, limit, window)
+					allowed, _, _, err = handlerDeps.Cache.RateLimitFixedWindow(ctx, key, limit, window)
 				case config.RLSlidingWindow:
-					allowed, _, _, err = cache.RateLimitSlidingWindow(ctx, key, limit, window)
+					allowed, _, _, err = handlerDeps.Cache.RateLimitSlidingWindow(ctx, key, limit, window)
 				default:
 					allowed = true
 			}
 
 			if err != nil {
-				logger.Errorf("rate-limit error: %v", err)
+				handlerDeps.Logger.Errorf("rate-limit error: %v", err)
 				return
 			}
 			if !allowed {
@@ -55,30 +56,24 @@ func Handler(logger *logx.Logger, cfg config.Config, repositoryList *db.Reposito
 		
 		json, err := utils.JSON(update, false, false)
 		if err != nil {
-			logger.Errorf("marshal update: %v", err)
+			handlerDeps.Logger.Errorf("marshal update: %v", err)
 			return
 		}
-        logger.Debugf("update: %s", string(json))
+        handlerDeps.Logger.Debugf("update: %s", string(json))
 
-		u := &entities.UserEntity{
-			User: *update.Message.From,
+		if update.Message != nil && update.Message.Chat.Type == "private" {
+            private.HandlerMessage(ctx, b, update, handlerDeps)
+        } else if update.CallbackQuery != nil && update.CallbackQuery.Message.Message.Chat.Type == "private" {
+			private.HandlerCallBackQuery(ctx, b, update, handlerDeps)
 		}
-		_, id, err := repositoryList.UserRepository.UpsertByTelegramID(ctx, u)
-		if err != nil {
-			logger.Errorf("upsert user: %v", err)
-		}
-		logger.Debugf("upsert user id: %v", id.Hex())
 
-		m := &entities.MessageEntity{
-			Message: *update.Message,
-		}
-		id, err = repositoryList.MessageRepository.Create(ctx, m)
-		if err != nil {
-			logger.Errorf("create message: %v", err)
-		}
-		logger.Debugf("created message id: %v", id.Hex())
-
-		
-
+		// m := &entities.MessageEntity{
+		// 	Message: *update.Message,
+		// }
+		// id, err = handlerDeps.repositoryList.MessageRepository.Create(ctx, m)
+		// if err != nil {
+		// 	handlerDeps.logger.Errorf("create message: %v", err)
+		// }
+		// handlerDeps.logger.Debugf("created message id: %v", id.Hex())
     }
 }

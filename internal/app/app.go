@@ -9,6 +9,7 @@ import (
 	"github.com/frangi01/bbtelgo/internal/db"
 	"github.com/frangi01/bbtelgo/internal/handlers"
 	"github.com/frangi01/bbtelgo/internal/logx"
+	"github.com/frangi01/bbtelgo/internal/utils"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	tgbot "github.com/go-telegram/bot"
@@ -20,32 +21,33 @@ type App struct {
 	bot	 		*tgbot.Bot
 }
 
-func New(logger *logx.Logger, config config.Config, dbclient *mongo.Client, repositoryList *db.RepositoryList, cache *db.CacheClient) (*App, error) {
+func New(logger *logx.Logger, cfg config.Config, dbclient *mongo.Client, repositoryList *db.RepositoryList, cache *db.CacheClient) (*App, error) {
+	deps := utils.NewDeps(logger, cfg, repositoryList, cache)
+	h := handlers.Handler(deps)
+	
 	opts := []tgbot.Option{
-		tgbot.WithDefaultHandler(
-			handlers.Handler(logger, config, repositoryList, cache),
-		),
+		tgbot.WithDefaultHandler(h),
 	}
 
 	httpClient := &http.Client{
-		Timeout: time.Duration(config.Timeout) * time.Second,
+		Timeout: time.Duration(cfg.Timeout) * time.Second,
 		Transport: &http.Transport{
-			MaxIdleConns:    config.TransportMaxIdleConns,
-			IdleConnTimeout: time.Duration(config.TransportIdleConnTimeout) * time.Second,
+			MaxIdleConns:    cfg.TransportMaxIdleConns,
+			IdleConnTimeout: time.Duration(cfg.TransportIdleConnTimeout) * time.Second,
 		},
 	}
-	opts = append(opts, tgbot.WithHTTPClient(time.Duration(config.Timeout) ,httpClient))
+	opts = append(opts, tgbot.WithHTTPClient(time.Duration(cfg.Timeout) ,httpClient))
 
-	if config.WebHookSecret != "" {
-		opts = append(opts, tgbot.WithWebhookSecretToken(config.WebHookSecret))
+	if cfg.WebHookSecret != "" {
+		opts = append(opts, tgbot.WithWebhookSecretToken(cfg.WebHookSecret))
 	}
 
-	botx, err := tgbot.New(config.Token, opts...)
+	botx, err := tgbot.New(cfg.Token, opts...)
 	if err != nil {
 		logger.Errorf("Error init bot %s", err)
 	}
 
-	return &App{logger: logger, config: config, bot: botx}, err
+	return &App{logger: logger, config: cfg, bot: botx}, err
 }
 
 func (app *App) Run(context context.Context) {
