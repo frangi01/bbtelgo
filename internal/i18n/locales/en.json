@@ -1,0 +1,8 @@
+{
+  "start.welcome": "Welcome! Click a button",
+  "button.1": "Button 1",
+  "button.2": "Button 2",
+  "button.3": "Button 3",
+  "photo.received": "Photo received!\nCaption: {caption}",
+  "error.command_not_found": "Command not found."
+}

@@ -9,7 +9,7 @@ import (
 	"github.com/go-telegram/bot/models"
 )
 
-func startHandler(ctx context.Context, b *bot.Bot, u *models.Update, _ []string, deps *utils.HandlerDeps) {
+func startHandler(ctx context.Context, b *bot.Bot, u *models.Update, _ []string, deps *utils.HandlerDeps, lang string) {
 	if u.Message == nil {
 		return
 	}
@@ -32,25 +32,29 @@ func startHandler(ctx context.Context, b *bot.Bot, u *models.Update, _ []string,
 	kb := &models.InlineKeyboardMarkup{
 		InlineKeyboard: [][]models.InlineKeyboardButton{
 			{
-				{Text: "Button 1", CallbackData: "button_1"},
-				{Text: "Button 2", CallbackData: "button_2:arg_1"},
+				{Text: deps.I18n.T(lang, "button.1", nil), CallbackData: "button_1"},
+				{Text: deps.I18n.T(lang, "button.2", nil), CallbackData: "button_2:arg_1"},
 			},
 			{
-				{Text: "Button 3", CallbackData: "button_3"},
+				{Text: deps.I18n.T(lang, "button.3", nil), CallbackData: "button_3"},
 			},
 		},
 	}
 
 	b.SendMessage(ctx, &bot.SendMessageParams{
-		ChatID:      u.Message.Chat.ID,
-		Text:        "Welcome! Click a button",
-		ReplyMarkup: kb,
+		ChatID:      	u.Message.Chat.ID,
+		Text:       	deps.I18n.T(lang, "button.1", nil),
+		ReplyMarkup: 	kb,
 	})
 }
 
-func photoHandler(ctx context.Context, b *bot.Bot, u *models.Update, _ []string, _ *utils.HandlerDeps) {
+func photoHandler(ctx context.Context, b *bot.Bot, u *models.Update, _ []string, deps *utils.HandlerDeps, lang string) {
+	lang = "de"
 	b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:      u.Message.Chat.ID,
-		Text:        "Photo received!\nCaption: " + u.Message.Caption,
+		Text:        deps.I18n.T(
+			lang, "photo.received", map[string]any{
+			"caption": u.Message.Caption,
+		}),
 	})
 }

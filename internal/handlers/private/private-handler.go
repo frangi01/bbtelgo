@@ -12,7 +12,7 @@ import (
 
 
 
-type HandleFunc func(ctx context.Context, b *bot.Bot, u *models.Update, _ []string, deps *utils.HandlerDeps)
+type HandleFunc func(ctx context.Context, b *bot.Bot, u *models.Update, _ []string, deps *utils.HandlerDeps, lang string)
 
 
 var routes = map[string]HandleFunc{
@@ -30,6 +30,14 @@ var callbackRoutes = map[string]HandleFunc{
 func HandlerMessage(ctx context.Context, b *bot.Bot, update *models.Update, handlerDeps *utils.HandlerDeps) {
 	
 	if update.Message.Text != "" {
+		
+		lang := ""
+		if update.Message.From != nil {
+			lang = update.Message.From.LanguageCode // "en", "it", "de", "ru", "en-US"...
+		}
+		lang = handlerDeps.I18n.BestLang(lang)
+		handlerDeps.Logger.Debugf("user lang: %v", lang)
+
 		msg := strings.TrimSpace(update.Message.Text)
 
 		// Extract command and args (ex: "/start foo bar")
@@ -47,13 +55,22 @@ func HandlerMessage(ctx context.Context, b *bot.Bot, update *models.Update, hand
 
 		// Dispatch
 		if h, ok := routes[cmd]; ok {
-			h(ctx, b, update, args, handlerDeps)
+			h(ctx, b, update, args, handlerDeps, lang)
 			return
 		}
 	}
 	
 	if update.Message.Photo != nil {
-		photoHandler(ctx, b, update, nil, handlerDeps)
+
+		lang := ""
+		if update.Message.From != nil {
+			lang = update.Message.From.LanguageCode // "en", "it", "de", "ru", "en-US"...
+		}
+		lang = handlerDeps.I18n.BestLang(lang)
+		handlerDeps.Logger.Debugf("user lang: %v", lang)
+
+
+		photoHandler(ctx, b, update, nil, handlerDeps, lang)
 	}
 
 
@@ -75,7 +92,7 @@ func HandlerCallBackQuery(ctx context.Context, b *bot.Bot, update *models.Update
 	}
 
 	if h, ok := callbackRoutes[cmd]; ok {
-		h(ctx, b, update, args, handlerDeps)
+		h(ctx, b, update, args, handlerDeps, "")
 	}
 
 	b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{

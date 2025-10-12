@@ -1,0 +1,8 @@
+{
+  "start.welcome": "Benvenuto! Clicca un pulsante",
+  "button.1": "Pulsante 1",
+  "button.2": "Pulsante 2",
+  "button.3": "Pulsante 3",
+  "photo.received": "Foto ricevuta!\nDidascalia: {caption}",
+  "error.command_not_found": "Comando non trovato."
+}

@@ -8,6 +8,7 @@ import (
 	"github.com/frangi01/bbtelgo/internal/app"
 	"github.com/frangi01/bbtelgo/internal/config"
 	"github.com/frangi01/bbtelgo/internal/db"
+	"github.com/frangi01/bbtelgo/internal/i18n"
 	"github.com/frangi01/bbtelgo/internal/logx"
 )
 
@@ -52,9 +53,12 @@ func main() {
 	}
 	defer cacheClient.Close()
 
+	i18nBundle, err := i18n.Load("internal/i18n/locales", "en")
+	if err != nil {
+		logger.Errorf("i18n load: %v", err)
+	}
 
-
-	app, err := app.New(logger, config, dbclient, repositoryList, cacheClient)
+	app, err := app.New(logger, config, dbclient, repositoryList, cacheClient, i18nBundle)
 	if err != nil {
 		logger.Errorf("bot - new")
 		return

@@ -10,7 +10,7 @@ import (
 
 
 
-func button1Handler(ctx context.Context, b *bot.Bot, u *models.Update, _ []string, deps *utils.HandlerDeps) {
+func button1Handler(ctx context.Context, b *bot.Bot, u *models.Update, _ []string, deps *utils.HandlerDeps, lang string) {
 
 	b.SendChatAction(ctx, &bot.SendChatActionParams{
 		ChatID: u.CallbackQuery.Message.Message.Chat.ID,
@@ -25,7 +25,7 @@ func button1Handler(ctx context.Context, b *bot.Bot, u *models.Update, _ []strin
 }
 
 
-func button2Handler(ctx context.Context, b *bot.Bot, u *models.Update, args []string, deps *utils.HandlerDeps) {
+func button2Handler(ctx context.Context, b *bot.Bot, u *models.Update, args []string, deps *utils.HandlerDeps, lang string) {
 
 	b.SendChatAction(ctx, &bot.SendChatActionParams{
 		ChatID: u.CallbackQuery.Message.Message.Chat.ID,
@@ -39,7 +39,7 @@ func button2Handler(ctx context.Context, b *bot.Bot, u *models.Update, args []st
 	})
 }
 
-func button3Handler(ctx context.Context, b *bot.Bot, u *models.Update, args []string, deps *utils.HandlerDeps) {
+func button3Handler(ctx context.Context, b *bot.Bot, u *models.Update, args []string, deps *utils.HandlerDeps, lang string) {
 
 	b.SendChatAction(ctx, &bot.SendChatActionParams{
 		ChatID: u.CallbackQuery.Message.Message.Chat.ID,

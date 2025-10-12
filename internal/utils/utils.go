@@ -6,6 +6,7 @@ import (
 
 	"github.com/frangi01/bbtelgo/internal/config"
 	"github.com/frangi01/bbtelgo/internal/db"
+	"github.com/frangi01/bbtelgo/internal/i18n"
 	"github.com/frangi01/bbtelgo/internal/logx"
 	"github.com/go-telegram/bot/models"
 )
@@ -26,10 +27,11 @@ func JSON(v any, pretty bool, escapeHTML bool) ([]byte, error) {
 }
 
 type HandlerDeps struct {
-	Logger         *logx.Logger
-	Cfg            config.Config
-	RepositoryList *db.RepositoryList
-	Cache          *db.CacheClient
+	Logger         	*logx.Logger
+	Cfg            	config.Config
+	RepositoryList 	*db.RepositoryList
+	Cache          	*db.CacheClient
+	I18n			*i18n.Bundle
 }
 
 func NewDeps(
@@ -37,12 +39,14 @@ func NewDeps(
 	cfg config.Config,
 	repositoryList *db.RepositoryList,
 	cache *db.CacheClient,
+	i18n *i18n.Bundle,
 ) *HandlerDeps {
 	return &HandlerDeps{
 		Logger:         logger,
 		Cfg:            cfg,
 		RepositoryList: repositoryList,
 		Cache:          cache,
+		I18n: i18n,
 	}
 }
 

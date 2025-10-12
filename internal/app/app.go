@@ -8,6 +8,7 @@ import (
 	"github.com/frangi01/bbtelgo/internal/config"
 	"github.com/frangi01/bbtelgo/internal/db"
 	"github.com/frangi01/bbtelgo/internal/handlers"
+	"github.com/frangi01/bbtelgo/internal/i18n"
 	"github.com/frangi01/bbtelgo/internal/logx"
 	"github.com/frangi01/bbtelgo/internal/utils"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -21,8 +22,8 @@ type App struct {
 	bot	 		*tgbot.Bot
 }
 
-func New(logger *logx.Logger, cfg config.Config, dbclient *mongo.Client, repositoryList *db.RepositoryList, cache *db.CacheClient) (*App, error) {
-	deps := utils.NewDeps(logger, cfg, repositoryList, cache)
+func New(logger *logx.Logger, cfg config.Config, dbclient *mongo.Client, repositoryList *db.RepositoryList, cache *db.CacheClient, i18nBundle *i18n.Bundle) (*App, error) {
+	deps := utils.NewDeps(logger, cfg, repositoryList, cache, i18nBundle)
 	h := handlers.Handler(deps)
 	
 	opts := []tgbot.Option{

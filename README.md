@@ -23,13 +23,19 @@ bbtelgo/
 │   │   └── app.go
 │   ├── config/              # configuration from environment variables
 │   │   └── config.go
-│   ├── db/                  # MongoDB connection and setup
+│   ├── db/                  # MongoDB and Redis connection and setup
+│   │   ├── redis.go
 │   │   └── mongo.go
 │   ├── entities/            # models (User, Message, etc.)
 │   │   ├── user.go
 │   │   └── message.go
 │   ├── handlers/            # update handlers for Telegram
+│   │   ├── private/         # handlers for private telegram messages
+│   │   │   ├── private-callbacks.go
+│   │   │   ├── private-handler.go
+│   │   |   └── private-messages.go
 │   │   └── handler.go
+│   ├── i18n/                # configuration for traductions
 │   ├── logx/                # custom logger
 │   │   └── logx.go
 │   ├── repo/                # repository pattern for Mongo
